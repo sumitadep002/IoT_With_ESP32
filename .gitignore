@@ -1,3 +1,4 @@
 .espressif
 .envrc
 *build
+.vscode
