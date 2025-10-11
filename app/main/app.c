@@ -29,5 +29,20 @@ void wifi_init_sta()
     esp_event_loop_create_default();     // Create event loop
     esp_netif_create_default_wifi_sta(); // Create default station interface, this will be studies later
 
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg); // Initialize Wi-Fi with default config
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASS,
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+        },
+    };
+
+    esp_wifi_set_mode(WIFI_MODE_STA); // Set Wi-Fi to station mode
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    esp_wifi_start();
+
     ESP_LOGI(tag, "...DONE");
 }
