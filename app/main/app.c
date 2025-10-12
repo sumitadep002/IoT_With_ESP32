@@ -3,13 +3,16 @@
 #include "esp_netif.h"
 #include "esp_event.h"
 #include "esp_wifi.h"
+#include "lwip/dns.h"
 
 #define TAG_MAIN "MAIN"
 #define TAG_WIFI "WIFI"
+#define TAG_NW_INFO "NETWORK_INFO"
 
-void wifi_init_sta();
-void event_handler(void *arg, esp_event_base_t event_base,
-                   int32_t event_id, void *event_data);
+static void wifi_init_sta();
+static void event_handler(void *arg, esp_event_base_t event_base,
+                          int32_t event_id, void *event_data);
+static void print_network_info(void);
 
 void app_main(void)
 {
@@ -24,6 +27,14 @@ void app_main(void)
 
 void wifi_init_sta()
 {
+    esp_log_level_set("wifi", ESP_LOG_WARN);
+    esp_log_level_set("wifi_init", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif", ESP_LOG_WARN);
+    esp_log_level_set("lwip", ESP_LOG_WARN);
+    esp_log_level_set("esp_event", ESP_LOG_WARN);
+    esp_log_level_set("phy", ESP_LOG_WARN);
+    esp_log_level_set("system_api", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_handlers", ESP_LOG_WARN);
 
     ESP_LOGI(TAG_WIFI, "");
 
@@ -69,9 +80,30 @@ void event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG_WIFI, "Disconnected. Reconnecting...");
         esp_wifi_connect();
     }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
+    {
+        ESP_LOGI(TAG_WIFI, "Connected: ");
+    }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG_WIFI, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        print_network_info();
     }
+}
+
+void print_network_info(void)
+{
+    esp_netif_ip_info_t ip_info;
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info);
+
+    ESP_LOGI(TAG_NW_INFO, "================== Network Info ==================");
+    ESP_LOGI(TAG_NW_INFO, "IP Address:    " IPSTR, IP2STR(&ip_info.ip));
+    ESP_LOGI(TAG_NW_INFO, "Subnet Mask:   " IPSTR, IP2STR(&ip_info.netmask));
+    ESP_LOGI(TAG_NW_INFO, "Gateway:       " IPSTR, IP2STR(&ip_info.gw));
+
+    const ip_addr_t *dns_server = dns_getserver(0);
+    ESP_LOGI(TAG_NW_INFO, "Primary DNS:   " IPSTR, IP2STR(&dns_server->u_addr.ip4));
+
+    dns_server = dns_getserver(1);
+    ESP_LOGI(TAG_NW_INFO, "Secondary DNS: " IPSTR, IP2STR(&dns_server->u_addr.ip4));
+    ESP_LOGI(TAG_NW_INFO, "=================================================");
 }
