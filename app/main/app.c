@@ -136,7 +136,7 @@ void ping()
 
         if (err != ESP_OK)
         {
-            ESP_LOGE(TAG_PING, "NO-INTERNET (%s)", err);
+            ESP_LOGE(TAG_PING, "NO-INTERNET");
         }
         else
         {
