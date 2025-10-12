@@ -4,15 +4,24 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "lwip/dns.h"
+#include "esp_http_client.h"
 
 #define TAG_MAIN "MAIN"
 #define TAG_WIFI "WIFI"
 #define TAG_NW_INFO "NETWORK_INFO"
+#define TAG_PING "PING"
+
+#define PING_INTERVAL 10000
+
+#define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
+
+volatile bool gf_wifi_state = false;
 
 static void wifi_init_sta();
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data);
 static void print_network_info(void);
+static void ping();
 
 void app_main(void)
 {
@@ -22,6 +31,7 @@ void app_main(void)
     {
         ESP_LOGI(TAG_MAIN, "Running....");
         vTaskDelay(pdMS_TO_TICKS(1000));
+        ping();
     }
 }
 
@@ -78,6 +88,7 @@ void event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         ESP_LOGI(TAG_WIFI, "Disconnected. Reconnecting...");
+        gf_wifi_state = false;
         esp_wifi_connect();
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
@@ -87,6 +98,7 @@ void event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         print_network_info();
+        gf_wifi_state = true;
     }
 }
 
@@ -106,4 +118,31 @@ void print_network_info(void)
     dns_server = dns_getserver(1);
     ESP_LOGI(TAG_NW_INFO, "Secondary DNS: " IPSTR, IP2STR(&dns_server->u_addr.ip4));
     ESP_LOGI(TAG_NW_INFO, "=================================================");
+}
+
+void ping()
+{
+    static uint32_t ping_timer;
+    if (MILLIS() - ping_timer > PING_INTERVAL && gf_wifi_state == true)
+    {
+        ping_timer = MILLIS();
+        esp_http_client_config_t config = {
+            .url = "http://www.google.com", // You can replace with any public website
+        };
+
+        esp_http_client_handle_t client = esp_http_client_init(&config);
+
+        esp_err_t err = esp_http_client_perform(client);
+
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG_PING, "NO-INTERNET (%s)", err);
+        }
+        else
+        {
+            ESP_LOGI(TAG_PING, "OK");
+        }
+
+        esp_http_client_cleanup(client);
+    }
 }
