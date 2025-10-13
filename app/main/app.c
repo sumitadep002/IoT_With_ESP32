@@ -13,8 +13,10 @@
 #define TAG_NW_INFO "NETWORK_INFO"
 #define TAG_PING "PING"
 #define TAG_NTP "NTP"
+#define TAG_TEST "TEST_HTTP"
 
-#define PING_INTERVAL 10000
+#define PING_INTERVAL 5000
+#define TEST_HTTP_INTERVAL 15000
 
 #define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
 
@@ -30,6 +32,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 static void print_network_info(void);
 static void ping();
 static bool get_ntp();
+static void test_http();
 
 void app_main(void)
 {
@@ -40,6 +43,7 @@ void app_main(void)
         ESP_LOGI(TAG_MAIN, "Running....");
         vTaskDelay(pdMS_TO_TICKS(1000));
         ping();
+        test_http();
     }
 }
 
@@ -188,4 +192,34 @@ bool get_ntp()
     ESP_LOGI(TAG_NTP, "Current time: %s", asctime(&timeinfo));
 
     return true;
+}
+
+void test_http()
+{
+    static uint32_t timer;
+    if (MILLIS() - timer > TEST_HTTP_INTERVAL)
+    {
+        timer = MILLIS();
+
+        esp_http_client_config_t config = {
+            .url = "http://httpbin.org/get",
+        };
+
+        esp_http_client_handle_t client = esp_http_client_init(&config);
+
+        esp_err_t err = esp_http_client_perform(client);
+
+        if (err == ESP_OK)
+        {
+            ESP_LOGI(TAG_TEST, "HTTP GET Status = %d, content_length = %lld",
+                     esp_http_client_get_status_code(client),
+                     esp_http_client_get_content_length(client));
+        }
+        else
+        {
+            ESP_LOGE(TAG_TEST, "HTTP GET request failed: %s", esp_err_to_name(err));
+        }
+
+        esp_http_client_cleanup(client);
+    }
 }
