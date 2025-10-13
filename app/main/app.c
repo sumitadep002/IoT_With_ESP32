@@ -13,10 +13,12 @@
 #define TAG_NW_INFO "NETWORK_INFO"
 #define TAG_PING "PING"
 #define TAG_NTP "NTP"
-#define TAG_TEST "TEST_HTTP"
+#define TAG_TEST_HTTP "TEST_HTTP"
+#define TAG_TEST_HTTPS "TEST_HTTPS"
 
 #define PING_INTERVAL 5000
 #define TEST_HTTP_INTERVAL 15000
+#define TEST_HTTPS_INTERVAL 13000
 
 #define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
 
@@ -26,6 +28,9 @@
 volatile bool gf_wifi_state = false;
 volatile bool gf_ntp_updated = false;
 
+extern const uint8_t httpbin_root_cert_pem_start[] asm("_binary_httpbin_root_cert_pem_start");
+extern const uint8_t httpbin_root_cert_pem_end[] asm("_binary_httpbin_root_cert_pem_end");
+
 static void wifi_init_sta();
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data);
@@ -33,6 +38,7 @@ static void print_network_info(void);
 static void ping();
 static bool get_ntp();
 static void test_http();
+static void test_https();
 
 void app_main(void)
 {
@@ -44,6 +50,7 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(1000));
         ping();
         test_http();
+        test_https();
     }
 }
 
@@ -211,13 +218,52 @@ void test_http()
 
         if (err == ESP_OK)
         {
-            ESP_LOGI(TAG_TEST, "HTTP GET Status = %d, content_length = %lld",
+            ESP_LOGI(TAG_TEST_HTTP, "HTTP GET Status = %d, content_length = %lld",
                      esp_http_client_get_status_code(client),
                      esp_http_client_get_content_length(client));
         }
         else
         {
-            ESP_LOGE(TAG_TEST, "HTTP GET request failed: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG_TEST_HTTP, "HTTP GET request failed: %s", esp_err_to_name(err));
+        }
+
+        esp_http_client_cleanup(client);
+    }
+}
+
+void test_https()
+{
+    static uint32_t timer;
+    if (MILLIS() - timer > TEST_HTTP_INTERVAL)
+    {
+        timer = MILLIS();
+
+        esp_http_client_config_t config = {
+            .url = "https://httpbin.org/get",
+            .cert_pem = (const char *)httpbin_root_cert_pem_start,
+        };
+
+        esp_http_client_handle_t client = esp_http_client_init(&config);
+
+        esp_err_t err = esp_http_client_perform(client);
+
+        if (err == ESP_OK)
+        {
+            ESP_LOGI(TAG_TEST_HTTPS, "HTTPS GET Status = %d, content_length = %lld",
+                     esp_http_client_get_status_code(client),
+                     esp_http_client_get_content_length(client));
+
+            char buffer[256];
+            int read_len = esp_http_client_read_response(client, buffer, sizeof(buffer) - 1);
+            if (read_len > 0)
+            {
+                buffer[read_len] = 0;
+                ESP_LOGI(TAG_TEST_HTTPS, "Response:\n%s", buffer);
+            }
+        }
+        else
+        {
+            ESP_LOGE(TAG_TEST_HTTPS, "HTTPS GET request failed: %s", esp_err_to_name(err));
         }
 
         esp_http_client_cleanup(client);
