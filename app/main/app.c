@@ -5,23 +5,31 @@
 #include "esp_wifi.h"
 #include "lwip/dns.h"
 #include "esp_http_client.h"
+#include "esp_sntp.h"
+#include <time.h>
 
 #define TAG_MAIN "MAIN"
 #define TAG_WIFI "WIFI"
 #define TAG_NW_INFO "NETWORK_INFO"
 #define TAG_PING "PING"
+#define TAG_NTP "NTP"
 
 #define PING_INTERVAL 10000
 
 #define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
 
+#define WIFI_SSID "Samsung"
+#define WIFI_PASS "66778899"
+
 volatile bool gf_wifi_state = false;
+volatile bool gf_ntp_updated = false;
 
 static void wifi_init_sta();
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data);
 static void print_network_info(void);
 static void ping();
+static bool get_ntp();
 
 void app_main(void)
 {
@@ -141,8 +149,43 @@ void ping()
         else
         {
             ESP_LOGI(TAG_PING, "OK");
+            if (gf_ntp_updated == false)
+            {
+                gf_ntp_updated = get_ntp();
+            }
         }
 
         esp_http_client_cleanup(client);
     }
+}
+
+bool get_ntp()
+{
+    // Initialize SNTP
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, "pool.ntp.org"); // or "time.google.com"
+    esp_sntp_init();
+
+    // Wait for time to be set
+    time_t now = 0;
+    struct tm timeinfo = {0};
+    int retry = 0;
+    const int retry_count = 10;
+    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count)
+    {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        time(&now);
+        localtime_r(&now, &timeinfo);
+    }
+
+    // Set time zone to IST (India Standard Time)
+    setenv("TZ", "IST-5:30", 1);
+    tzset();
+
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    ESP_LOGI(TAG_NTP, "Current time: %s", asctime(&timeinfo));
+
+    return true;
 }
