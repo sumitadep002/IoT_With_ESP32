@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define TAG_MAIN "MAIN"
+#define TAG_WIFI_AP "WIFI_AP"
 #define TAG_WIFI "WIFI"
 #define TAG_NW_INFO "NETWORK_INFO"
 #define TAG_PING "PING"
@@ -25,12 +26,18 @@
 #define WIFI_SSID "Samsung"
 #define WIFI_PASS "66778899"
 
+#define WIFI_AP_SSID "ESP32_AP"
+#define WIFI_AP_PASS "esp@123456789"
+#define WIFI_AP_MAX_CLIENTS 1
+#define WIFI_AP_CHANNEL 1
+
 volatile bool gf_wifi_state = false;
 volatile bool gf_ntp_updated = false;
 
 extern const uint8_t httpbin_root_cert_pem_start[] asm("_binary_httpbin_root_cert_pem_start");
 extern const uint8_t httpbin_root_cert_pem_end[] asm("_binary_httpbin_root_cert_pem_end");
 
+static void wifi_init_ap();
 static void wifi_init_sta();
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data);
@@ -42,16 +49,53 @@ static void test_https();
 
 void app_main(void)
 {
-    wifi_init_sta();
+    // wifi_init_sta();
+    wifi_init_ap();
 
     while (1)
     {
         ESP_LOGI(TAG_MAIN, "Running....");
         vTaskDelay(pdMS_TO_TICKS(1000));
-        ping();
-        test_http();
-        test_https();
+        // ping();
+        // test_http();
+        // test_https();
     }
+}
+
+void wifi_init_ap()
+{
+    ESP_LOGI(TAG_WIFI, "");
+
+    // Initialize NVS
+    // This is important to be done as wifi uses nvs to store phy layer parameter, user credentials, tx-power level etc,...
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    esp_netif_init();                // Initialize TCP/IP stack
+    esp_event_loop_create_default(); // Create event loop
+    esp_netif_create_default_wifi_ap();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid = WIFI_AP_SSID,
+            .ssid_len = strlen(WIFI_AP_SSID),
+            .channel = WIFI_AP_CHANNEL,
+            .password = WIFI_AP_PASS,
+            .max_connection = WIFI_AP_MAX_CLIENTS,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK},
+    };
+    if (strlen(WIFI_PASS) == 0)
+    {
+        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    }
+
+    esp_wifi_set_mode(WIFI_MODE_AP);
+    esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
+    esp_wifi_start();
+
+    ESP_LOGI(TAG_WIFI_AP, "started ...");
 }
 
 void wifi_init_sta()
