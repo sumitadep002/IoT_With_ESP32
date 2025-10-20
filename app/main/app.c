@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define TAG_MAIN "MAIN"
+#define TAG_WIFI_APSTA "WIFI_APSTA"
 #define TAG_WIFI_AP "WIFI_AP"
 #define TAG_WIFI "WIFI"
 #define TAG_NW_INFO "NETWORK_INFO"
@@ -37,6 +38,7 @@ volatile bool gf_ntp_updated = false;
 extern const uint8_t httpbin_root_cert_pem_start[] asm("_binary_httpbin_root_cert_pem_start");
 extern const uint8_t httpbin_root_cert_pem_end[] asm("_binary_httpbin_root_cert_pem_end");
 
+static void wifi_init_apsta();
 static void wifi_init_ap();
 static void wifi_init_sta();
 static void event_handler(void *arg, esp_event_base_t event_base,
@@ -49,17 +51,73 @@ static void test_https();
 
 void app_main(void)
 {
-    // wifi_init_sta();
-    wifi_init_ap();
+    wifi_init_apsta();
 
     while (1)
     {
         ESP_LOGI(TAG_MAIN, "Running....");
         vTaskDelay(pdMS_TO_TICKS(1000));
-        // ping();
-        // test_http();
-        // test_https();
+        ping();
+        test_http();
+        test_https();
     }
+}
+
+void wifi_init_apsta()
+{
+    esp_log_level_set("wifi", ESP_LOG_WARN);
+    esp_log_level_set("wifi_init", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif", ESP_LOG_WARN);
+    esp_log_level_set("lwip", ESP_LOG_WARN);
+    esp_log_level_set("esp_event", ESP_LOG_WARN);
+    esp_log_level_set("phy", ESP_LOG_WARN);
+    esp_log_level_set("system_api", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_handlers", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_lwip", ESP_LOG_WARN);
+
+    ESP_LOGI(TAG_WIFI_APSTA, "");
+
+    // This is important to be done as wifi uses nvs to store phy layer parameter, user credentials, tx-power level etc,...
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    esp_netif_init();                // Initialize TCP/IP stack
+    esp_event_loop_create_default(); // Create event loop
+    esp_netif_create_default_wifi_ap();
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL);
+
+    wifi_config_t wifi_config_ap = {
+        .ap = {
+            .ssid = WIFI_AP_SSID,
+            .ssid_len = strlen(WIFI_AP_SSID),
+            .channel = WIFI_AP_CHANNEL,
+            .password = WIFI_AP_PASS,
+            .max_connection = WIFI_AP_MAX_CLIENTS,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK},
+    };
+
+    wifi_config_t wifi_config_sta = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASS,
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+        },
+    };
+
+    esp_wifi_set_mode(WIFI_MODE_APSTA);
+
+    esp_wifi_set_config(WIFI_IF_AP, &wifi_config_ap);
+    esp_wifi_set_config(WIFI_IF_STA, &wifi_config_sta);
+
+    esp_wifi_start();
+
+    ESP_LOGI(TAG_WIFI_AP, "started ...");
 }
 
 void wifi_init_ap()
