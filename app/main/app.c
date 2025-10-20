@@ -64,6 +64,16 @@ void app_main(void)
 
 void wifi_init_ap()
 {
+    esp_log_level_set("wifi", ESP_LOG_WARN);
+    esp_log_level_set("wifi_init", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif", ESP_LOG_WARN);
+    esp_log_level_set("lwip", ESP_LOG_WARN);
+    esp_log_level_set("esp_event", ESP_LOG_WARN);
+    esp_log_level_set("phy", ESP_LOG_WARN);
+    esp_log_level_set("system_api", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_handlers", ESP_LOG_WARN);
+    esp_log_level_set("esp_netif_lwip", ESP_LOG_WARN);
+
     ESP_LOGI(TAG_WIFI, "");
 
     // Initialize NVS
@@ -76,6 +86,9 @@ void wifi_init_ap()
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&cfg);
+
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_ASSIGNED_IP_TO_CLIENT, &event_handler, NULL);
 
     wifi_config_t wifi_config = {
         .ap = {
@@ -162,6 +175,20 @@ void event_handler(void *arg, esp_event_base_t event_base,
     {
         print_network_info();
         gf_wifi_state = true;
+    }
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_ASSIGNED_IP_TO_CLIENT)
+    {
+        ip_event_ap_staipassigned_t *ev = (ip_event_ap_staipassigned_t *)event_data;
+        ESP_LOGI(TAG_WIFI_AP, "Client got IP: " IPSTR, IP2STR(&ev->ip));
+    }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
+    {
+        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
+
+        ESP_LOGI(TAG_WIFI_AP, "Client disconnected: MAC=%02x:%02x:%02x:%02x:%02x:%02x, AID=%d",
+                 event->mac[0], event->mac[1], event->mac[2],
+                 event->mac[3], event->mac[4], event->mac[5],
+                 event->aid);
     }
 }
 
