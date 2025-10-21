@@ -9,11 +9,13 @@
 void app_main(void)
 {
     wifi_init_apsta();
+    http_ping_init();
 
     while (1)
     {
-        ESP_LOGI(TAG_MAIN, "Running....");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        http_ping();
+
+        ESP_LOGI(TAG_MAIN, "Running...");
+
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

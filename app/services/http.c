@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_http_client.h"
 #include "esp_sntp.h"
@@ -14,35 +15,44 @@
 static volatile bool gf_ntp_updated = false;
 
 static bool get_ntp();
+static void http_ping_task(void *);
 
-void http_ping()
+void http_ping_init()
 {
-    static uint32_t ping_timer;
-    if (MILLIS() - ping_timer > PING_INTERVAL && wifi_state_get() == true)
+    xTaskCreate(http_ping_task, "http_ping_task", 2048, NULL, 5, NULL);
+}
+
+void http_ping_task(void *pvParameters)
+{
+
+    while (1)
     {
-        ping_timer = MILLIS();
-        esp_http_client_config_t config = {
-            .url = PING_URL,
-        };
-
-        esp_http_client_handle_t client = esp_http_client_init(&config);
-
-        esp_err_t err = esp_http_client_perform(client);
-
-        if (err != ESP_OK)
+        if (wifi_state_get() == true)
         {
-            ESP_LOGE(TAG_PING, "NO-INTERNET");
-        }
-        else
-        {
-            ESP_LOGI(TAG_PING, "OK");
-            if (gf_ntp_updated == false)
+            esp_http_client_config_t config = {
+                .url = PING_URL,
+            };
+
+            esp_http_client_handle_t client = esp_http_client_init(&config);
+
+            esp_err_t err = esp_http_client_perform(client);
+
+            if (err != ESP_OK)
             {
-                gf_ntp_updated = get_ntp();
+                ESP_LOGE(TAG_PING, "NO-INTERNET");
             }
-        }
+            else
+            {
+                ESP_LOGI(TAG_PING, "OK");
+                if (gf_ntp_updated == false)
+                {
+                    gf_ntp_updated = get_ntp();
+                }
+            }
 
-        esp_http_client_cleanup(client);
+            esp_http_client_cleanup(client);
+        }
+        vTaskDelay(pdMS_TO_TICKS(PING_INTERVAL));
     }
 }
 
