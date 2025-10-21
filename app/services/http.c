@@ -22,7 +22,7 @@ void http_ping()
     {
         ping_timer = MILLIS();
         esp_http_client_config_t config = {
-            .url = "http://www.google.com", // You can replace with any public website
+            .url = PING_URL,
         };
 
         esp_http_client_handle_t client = esp_http_client_init(&config);

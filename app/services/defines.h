@@ -4,8 +4,7 @@
 #define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
 
 #define PING_INTERVAL 5000
-#define TEST_HTTP_INTERVAL 15000
-#define TEST_HTTPS_INTERVAL 13000
+#define PING_URL "http://www.google.com"
 
 #define WIFI_SSID "Samsung"
 #define WIFI_PASS "66778899"
