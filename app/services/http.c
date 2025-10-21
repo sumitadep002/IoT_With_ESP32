@@ -6,6 +6,7 @@
 #include <time.h>
 #include "defines.h"
 #include "wifi.h"
+#include "http.h"
 
 #define TAG_PING "PING"
 #define TAG_NTP "NTP"
