@@ -8,6 +8,8 @@
 #include "esp_sntp.h"
 #include <time.h>
 
+#include "defines.h"
+
 #define TAG_MAIN "MAIN"
 #define TAG_WIFI_APSTA "WIFI_APSTA"
 #define TAG_WIFI_AP "WIFI_AP"
@@ -17,20 +19,6 @@
 #define TAG_NTP "NTP"
 #define TAG_TEST_HTTP "TEST_HTTP"
 #define TAG_TEST_HTTPS "TEST_HTTPS"
-
-#define PING_INTERVAL 5000
-#define TEST_HTTP_INTERVAL 15000
-#define TEST_HTTPS_INTERVAL 13000
-
-#define MILLIS() pdTICKS_TO_MS(xTaskGetTickCount())
-
-#define WIFI_SSID "Samsung"
-#define WIFI_PASS "66778899"
-
-#define WIFI_AP_SSID "ESP32_AP"
-#define WIFI_AP_PASS "esp@123456789"
-#define WIFI_AP_MAX_CLIENTS 1
-#define WIFI_AP_CHANNEL 1
 
 volatile bool gf_wifi_state = false;
 volatile bool gf_ntp_updated = false;
