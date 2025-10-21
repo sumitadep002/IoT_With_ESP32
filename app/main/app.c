@@ -19,7 +19,7 @@ void app_main(void)
     {
         ESP_LOGI(TAG_MAIN, "Running....");
         vTaskDelay(pdMS_TO_TICKS(1000));
-        ping();
+        http_ping();
         test_http();
         test_https();
     }
