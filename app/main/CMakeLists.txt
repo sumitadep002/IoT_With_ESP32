@@ -1,3 +1,4 @@
 idf_component_register(SRCS "app.c"
-                    INCLUDE_DIRS "."
-                    EMBED_TXTFILES "httpbin_root_cert.pem")
+                    INCLUDE_DIRS "." "../services"
+                    SRCS "../services/wifi.c" "../services/http.c"
+                    )
