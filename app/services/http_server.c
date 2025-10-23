@@ -202,22 +202,6 @@ esp_err_t time_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t time_get_handler(httpd_req_t *req)
-{
-    time_t now;
-    struct tm timeinfo;
-    char strftime_buf[64];
-
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%H:%M:%S, %d-%m-%Y", &timeinfo);
-
-    httpd_resp_set_type(req, "text/plain");
-    httpd_resp_sendstr(req, strftime_buf);
-
-    return ESP_OK;
-}
-
 esp_err_t status_get_handler(httpd_req_t *req)
 {
     char status_json[128];
