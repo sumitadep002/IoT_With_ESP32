@@ -14,4 +14,7 @@
 #define WIFI_AP_MAX_CLIENTS 1
 #define WIFI_AP_CHANNEL 1
 
+#define LOGIN_ID "admin"
+#define LOGIN_PASS "admin"
+
 #endif // DEFINES_H

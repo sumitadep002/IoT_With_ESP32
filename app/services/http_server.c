@@ -1,5 +1,7 @@
 #include "esp_http_server.h"
 
+#include "defines.h"
+
 static const char login_page[] =
     "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
     "<title>ESP Login</title><style>"
@@ -12,6 +14,7 @@ static const char login_page[] =
     "<button type='submit'>Login</button></form></div></body></html>";
 
 static esp_err_t login_get_handler(httpd_req_t *req);
+static esp_err_t login_post_handler(httpd_req_t *req);
 
 bool http_server_start()
 {
@@ -35,6 +38,18 @@ bool http_server_start()
         return false;
     }
 
+    httpd_uri_t login_post_uri = {
+        .uri = "/login",
+        .method = HTTP_POST,
+        .handler = login_post_handler,
+        .user_ctx = NULL};
+
+    if (httpd_register_uri_handler(server, &login_post_uri) != ESP_OK)
+    {
+        httpd_stop(server);
+        return false;
+    }
+
     return true;
 }
 
@@ -42,5 +57,63 @@ esp_err_t login_get_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");                   // set content type
     httpd_resp_send(req, login_page, HTTPD_RESP_USE_STRLEN); // send HTML
+    return ESP_OK;
+}
+
+esp_err_t login_post_handler(httpd_req_t *req)
+{
+    char buf[128];
+    int total_len = req->content_len;
+    int cur_len = 0;
+    int received = 0;
+
+    if (total_len >= sizeof(buf))
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Content too long");
+        return ESP_FAIL;
+    }
+
+    while (cur_len < total_len)
+    {
+        received = httpd_req_recv(req, buf + cur_len, total_len - cur_len);
+        if (received <= 0)
+        {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT)
+                continue;
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[cur_len] = '\0'; // Null-terminate
+
+    char username[32] = {0};
+    char password[32] = {0};
+
+    sscanf(buf, "username=%31[^&]&password=%31s", username, password);
+
+    for (int i = 0; username[i]; i++)
+    {
+        if (username[i] == '+')
+        {
+            username[i] = ' ';
+        }
+    }
+    for (int i = 0; password[i]; i++)
+    {
+        if (password[i] == '+')
+        {
+            password[i] = ' ';
+        }
+    }
+
+    if (strcmp(username, LOGIN_ID) == 0 && strcmp(password, LOGIN_PASS) == 0)
+    {
+        httpd_resp_send(req, "Login Successful!", HTTPD_RESP_USE_STRLEN);
+    }
+    else
+    {
+        httpd_resp_send(req, "Invalid Credentials!", HTTPD_RESP_USE_STRLEN);
+    }
+
     return ESP_OK;
 }
