@@ -25,7 +25,7 @@ bool http_client_get_internet_status()
 
 void http_client_ping_init()
 {
-    xTaskCreate(http_client_ping_task, "http_ping_task", 2048, NULL, 5, NULL);
+    xTaskCreate(http_client_ping_task, "http_ping_task", 2048 + 1024, NULL, 5, NULL);
 }
 
 void http_client_ping_task(void *pvParameters)
