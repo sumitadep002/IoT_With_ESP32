@@ -13,9 +13,15 @@
 #define TAG_NTP "NTP"
 
 static volatile bool gf_ntp_updated = false;
+static bool gf_internet_status = false;
 
 static bool get_ntp();
 static void http_client_ping_task(void *);
+
+bool http_client_get_internet_status()
+{
+    return gf_internet_status;
+}
 
 void http_client_ping_init()
 {
@@ -40,9 +46,11 @@ void http_client_ping_task(void *pvParameters)
             if (err != ESP_OK)
             {
                 ESP_LOGE(TAG_PING, "NO-INTERNET");
+                gf_internet_status = false;
             }
             else
             {
+                gf_internet_status = true;
                 ESP_LOGI(TAG_PING, "OK");
                 if (gf_ntp_updated == false)
                 {
