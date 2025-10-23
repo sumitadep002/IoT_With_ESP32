@@ -1,5 +1,5 @@
+#include <time.h>
 #include "esp_http_server.h"
-
 #include "defines.h"
 
 static const char login_page[] =
@@ -13,8 +13,25 @@ static const char login_page[] =
     "<input type='password' name='password' placeholder='Password' required>"
     "<button type='submit'>Login</button></form></div></body></html>";
 
+static const char dashboard_page[] =
+    "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+    "<title>ESP Clock</title>"
+    "<style>body{font-family:sans-serif;text-align:center;margin-top:80px;}</style>"
+    "</head><body>"
+    "<h2>Welcome!</h2>"
+    "<h1 id='clock'>Loading...</h1>"
+    "<script>"
+    "function updateClock(){"
+    " fetch('/time').then(res=>res.text()).then(t=>{"
+    "  document.getElementById('clock').innerText=t;"
+    " });"
+    "}"
+    "setInterval(updateClock,1000);updateClock();"
+    "</script></body></html>";
+
 static esp_err_t login_get_handler(httpd_req_t *req);
 static esp_err_t login_post_handler(httpd_req_t *req);
+static esp_err_t time_get_handler(httpd_req_t *req);
 
 bool http_server_start()
 {
@@ -45,6 +62,18 @@ bool http_server_start()
         .user_ctx = NULL};
 
     if (httpd_register_uri_handler(server, &login_post_uri) != ESP_OK)
+    {
+        httpd_stop(server);
+        return false;
+    }
+
+    httpd_uri_t time_get_uri = {
+        .uri = "/time",
+        .method = HTTP_GET,
+        .handler = time_get_handler,
+        .user_ctx = NULL};
+
+    if (httpd_register_uri_handler(server, &time_get_uri) != ESP_OK)
     {
         httpd_stop(server);
         return false;
@@ -108,12 +137,28 @@ esp_err_t login_post_handler(httpd_req_t *req)
 
     if (strcmp(username, LOGIN_ID) == 0 && strcmp(password, LOGIN_PASS) == 0)
     {
-        httpd_resp_send(req, "Login Successful!", HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, dashboard_page, HTTPD_RESP_USE_STRLEN);
     }
     else
     {
         httpd_resp_send(req, "Invalid Credentials!", HTTPD_RESP_USE_STRLEN);
     }
+
+    return ESP_OK;
+}
+
+esp_err_t time_get_handler(httpd_req_t *req)
+{
+    time_t now;
+    struct tm timeinfo;
+    char strftime_buf[64];
+
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    strftime(strftime_buf, sizeof(strftime_buf), "%H:%M:%S, %d-%m-%Y", &timeinfo);
+
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_sendstr(req, strftime_buf);
 
     return ESP_OK;
 }
