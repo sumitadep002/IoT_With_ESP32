@@ -19,7 +19,7 @@ static void print_network_info(void);
 
 void wifi_state_set(bool state)
 {
-    gf_wifi_state = true;
+    gf_wifi_state = state;
 }
 bool wifi_state_get()
 {
