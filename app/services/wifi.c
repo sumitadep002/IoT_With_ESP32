@@ -52,7 +52,7 @@ void wifi_init_apsta()
     esp_wifi_init(&cfg);
 
     esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
-    esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_ASSIGNED_IP_TO_CLIENT, &event_handler, NULL);
     esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL);
 
     wifi_config_t wifi_config_ap = {
@@ -199,7 +199,7 @@ void event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_ASSIGNED_IP_TO_CLIENT)
     {
-        ip_event_ap_staipassigned_t *ev = (ip_event_ap_staipassigned_t *)event_data;
+        ip_event_assigned_ip_to_client_t *ev = (ip_event_assigned_ip_to_client_t *)event_data;
         ESP_LOGI(TAG_WIFI_AP, "Client got IP: " IPSTR, IP2STR(&ev->ip));
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
