@@ -7,7 +7,7 @@
 #include <time.h>
 #include "defines.h"
 #include "wifi.h"
-#include "http.h"
+#include "http_client.h"
 
 #define TAG_PING "PING"
 #define TAG_NTP "NTP"
@@ -15,14 +15,14 @@
 static volatile bool gf_ntp_updated = false;
 
 static bool get_ntp();
-static void http_ping_task(void *);
+static void http_client_ping_task(void *);
 
-void http_ping_init()
+void http_client_ping_init()
 {
-    xTaskCreate(http_ping_task, "http_ping_task", 2048, NULL, 5, NULL);
+    xTaskCreate(http_client_ping_task, "http_ping_task", 2048, NULL, 5, NULL);
 }
 
-void http_ping_task(void *pvParameters)
+void http_client_ping_task(void *pvParameters)
 {
 
     while (1)

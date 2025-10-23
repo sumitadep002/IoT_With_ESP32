@@ -1,4 +1,4 @@
 idf_component_register(SRCS "app.c"
                     INCLUDE_DIRS "." "../services"
-                    SRCS "../services/wifi.c" "../services/http.c"
+                    SRCS "../services/wifi.c" "../services/http_client.c"
                     )

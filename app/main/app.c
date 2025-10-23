@@ -2,14 +2,14 @@
 #include "esp_log.h"
 #include "defines.h"
 #include "wifi.h"
-#include "http.h"
+#include "http_client.h"
 
 #define TAG_MAIN "MAIN"
 
 void app_main(void)
 {
     wifi_init_apsta();
-    http_ping_init();
+    http_client_ping_init();
 
     while (1)
     {
