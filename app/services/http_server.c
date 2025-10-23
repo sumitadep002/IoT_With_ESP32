@@ -1,6 +1,8 @@
 #include <time.h>
+#include "http_client.h"
 #include "esp_http_server.h"
 #include "defines.h"
+#include "wifi.h"
 
 static const char login_page[] =
     "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -15,23 +17,48 @@ static const char login_page[] =
 
 static const char dashboard_page[] =
     "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-    "<title>ESP Clock</title>"
-    "<style>body{font-family:sans-serif;text-align:center;margin-top:80px;}</style>"
-    "</head><body>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<title>ESP Dashboard</title>"
+    "<style>"
+    "body{font-family:Arial,Helvetica,sans-serif;text-align:center;background:#f2f2f2;margin-top:60px;}"
+    "h1{color:#333;}"
+    ".status{margin-top:30px;font-size:18px;}"
+    ".ok{color:green;}"
+    ".fail{color:red;}"
+    "</style></head><body>"
     "<h2>Welcome!</h2>"
-    "<h1 id='clock'>Loading...</h1>"
+    "<h1 id='clock'>--:--:--</h1>"
+    "<div class='status'>"
+    "Wi-Fi: <span id='wifi-status'>—</span><br>"
+    "Internet: <span id='internet-status'>—</span>"
+    "</div>"
+
     "<script>"
+    // --- Clock update ---
     "function updateClock(){"
     " fetch('/time').then(res=>res.text()).then(t=>{"
     "  document.getElementById('clock').innerText=t;"
     " });"
     "}"
     "setInterval(updateClock,1000);updateClock();"
-    "</script></body></html>";
+
+    // --- Network status update ---
+    "function updateStatus(){"
+    " fetch('/status').then(res=>res.json()).then(data=>{"
+    "  document.getElementById('wifi-status').innerText=data.wifi;"
+    "  document.getElementById('internet-status').innerText=data.internet;"
+    "  document.getElementById('wifi-status').className=(data.wifi==='connected')?'ok':'fail';"
+    "  document.getElementById('internet-status').className=(data.internet==='available')?'ok':'fail';"
+    " });"
+    "}"
+    "setInterval(updateStatus,3000);updateStatus();"
+    "</script>"
+    "</body></html>";
 
 static esp_err_t login_get_handler(httpd_req_t *req);
 static esp_err_t login_post_handler(httpd_req_t *req);
 static esp_err_t time_get_handler(httpd_req_t *req);
+static esp_err_t status_get_handler(httpd_req_t *req);
 
 bool http_server_start()
 {
@@ -74,6 +101,18 @@ bool http_server_start()
         .user_ctx = NULL};
 
     if (httpd_register_uri_handler(server, &time_get_uri) != ESP_OK)
+    {
+        httpd_stop(server);
+        return false;
+    }
+
+    static const httpd_uri_t status_get_uri = {
+        .uri = "/status",
+        .method = HTTP_GET,
+        .handler = status_get_handler,
+        .user_ctx = NULL};
+
+    if (httpd_register_uri_handler(server, &status_get_uri) != ESP_OK)
     {
         httpd_stop(server);
         return false;
@@ -160,5 +199,21 @@ esp_err_t time_get_handler(httpd_req_t *req)
     httpd_resp_set_type(req, "text/plain");
     httpd_resp_sendstr(req, strftime_buf);
 
+    return ESP_OK;
+}
+
+esp_err_t status_get_handler(httpd_req_t *req)
+{
+    char status_json[128];
+    bool wifi_connected = wifi_state_get();
+    bool internet_connected = http_client_get_internet_status();
+
+    snprintf(status_json, sizeof(status_json),
+             "{\"wifi\":\"%s\", \"internet\":\"%s\"}",
+             wifi_connected ? "connected" : "disconnected",
+             internet_connected ? "available" : "unavailable");
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, status_json, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
