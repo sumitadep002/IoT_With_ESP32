@@ -206,7 +206,7 @@ esp_err_t status_get_handler(httpd_req_t *req)
 {
     char status_json[128];
     bool wifi_connected = wifi_state_get();
-    bool internet_connected = http_client_get_internet_status();
+    bool internet_connected = wifi_connected ? http_client_get_internet_status() : false;
 
     snprintf(status_json, sizeof(status_json),
              "{\"wifi\":\"%s\", \"internet\":\"%s\"}",
