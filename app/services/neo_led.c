@@ -21,9 +21,12 @@ static rmt_transmit_config_t transmit_config = {0};
 static rmt_bytes_encoder_config_t encoder_config = {0};
 static rmt_encoder_handle_t encoder = NULL;
 
+static QueueHandle_t neo_led_queue = NULL;
+
+static void neo_led_task(void *param);
+
 void neo_led_init(void)
 {
-    esp_err_t err;
 
     // --- Configure RMT TX channel ---
     tx_chan_config.clk_src = RMT_CLK_SRC_DEFAULT;
@@ -80,6 +83,12 @@ void neo_led_ctrl(neo_led_t led)
         code[2] = 0xFF; // B
         break;
 
+    case NEO_LED_ORANGE:
+        code[0] = 0x40; // G (a bit of green)
+        code[1] = 0xFF; // R (full red)
+        code[2] = 0x00; // B (no blue)
+        break;
+
     case NEO_LED_OFF:
     default:
         code[0] = 0x00;
@@ -95,4 +104,47 @@ void neo_led_ctrl(neo_led_t led)
     DELAY_MS(1);
 }
 
+void neo_led_task_init(void)
+{
+    neo_led_init();
+    neo_led_queue = xQueueCreate(10, sizeof(neo_led_queue_t));
+    if (neo_led_queue == NULL)
+    {
+        ESP_LOGE("LED", "Queue creation failed");
+        return;
+    }
+
+    BaseType_t status = xTaskCreate(neo_led_task, "neo_led_task", 4096, NULL, 5, NULL);
+    if (status != pdPASS)
+    {
+        ESP_LOGE("LED", "Failed to create LED task");
+    }
+}
+
+void neo_led_queue_send(neo_led_queue_t param)
+{
+    if (neo_led_queue != NULL)
+    {
+        xQueueSend(neo_led_queue, &param, portMAX_DELAY);
+    }
+}
+
+void neo_led_task(void *param)
+{
+    neo_led_queue_t led_comp;
+
+    while (1)
+    {
+        if (xQueueReceive(neo_led_queue, &led_comp, portMAX_DELAY) == pdPASS)
+        {
+            neo_led_ctrl(led_comp.color);
+
+            if (led_comp.latch == false)
+            {
+                DELAY_MS(led_comp.delay_ms);
+                neo_led_ctrl(NEO_LED_OFF);
+                DELAY_MS(led_comp.delay_ms);
+            }
+        }
+    }
 }
