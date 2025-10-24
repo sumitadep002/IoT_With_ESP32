@@ -17,4 +17,6 @@
 #define LOGIN_ID "admin"
 #define LOGIN_PASS "admin"
 
+#define NEO_LED_GPIO GPIO_NUM_48
+
 #endif // DEFINES_H

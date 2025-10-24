@@ -12,6 +12,7 @@ void app_main(void)
     wifi_init_apsta();
     http_client_ping_init();
     http_server_start();
+    neo_led_init();
 
     while (1)
     {
