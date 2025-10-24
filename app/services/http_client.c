@@ -60,7 +60,7 @@ void http_client_ping_task(void *pvParameters)
 
             esp_http_client_cleanup(client);
         }
-        vTaskDelay(pdMS_TO_TICKS(PING_INTERVAL));
+        DELAY_MS(PING_INTERVAL);
     }
 }
 

@@ -19,10 +19,6 @@ void app_main(void)
     {
 
         ESP_LOGI(TAG_MAIN, "Running...");
-        neo_led_ctrl(NEO_LED_RED);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        neo_led_ctrl(NEO_LED_OFF);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        DELAY_MS(5000);
     }
 }

@@ -92,5 +92,7 @@ void neo_led_ctrl(neo_led_t led)
     ESP_ERROR_CHECK(rmt_tx_wait_all_done(tx_chan, portMAX_DELAY));
 
     // Latch — hold low for >50 µs
-    vTaskDelay(pdMS_TO_TICKS(1));
+    DELAY_MS(1);
+}
+
 }
