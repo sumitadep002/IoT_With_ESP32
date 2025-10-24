@@ -10,5 +10,6 @@ typedef enum
 } neo_led_t;
 
 void neo_led_init();
+void neo_led_ctrl(neo_led_t led);
 
 #endif // NEO_LED_H

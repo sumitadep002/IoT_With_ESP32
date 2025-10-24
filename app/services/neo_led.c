@@ -55,4 +55,42 @@ void neo_led_init(void)
 
     ESP_LOGI(TAG_NEO_LED, "NeoPixel LED initialized on GPIO %d", NEO_LED_GPIO);
 }
+
+void neo_led_ctrl(neo_led_t led)
+{
+    uint8_t code[3] = {0}; // GRB format for WS2812
+
+    switch (led)
+    {
+    case NEO_LED_RED:
+        code[0] = 0x00; // G
+        code[1] = 0xFF; // R
+        code[2] = 0x00; // B
+        break;
+
+    case NEO_LED_GREEN:
+        code[0] = 0xFF; // G
+        code[1] = 0x00; // R
+        code[2] = 0x00; // B
+        break;
+
+    case NEO_LED_BLUE:
+        code[0] = 0x00; // G
+        code[1] = 0x00; // R
+        code[2] = 0xFF; // B
+        break;
+
+    case NEO_LED_OFF:
+    default:
+        code[0] = 0x00;
+        code[1] = 0x00;
+        code[2] = 0x00;
+        break;
+    }
+
+    ESP_ERROR_CHECK(rmt_transmit(tx_chan, encoder, code, sizeof(code), &transmit_config));
+    ESP_ERROR_CHECK(rmt_tx_wait_all_done(tx_chan, portMAX_DELAY));
+
+    // Latch — hold low for >50 µs
+    vTaskDelay(pdMS_TO_TICKS(1));
 }
