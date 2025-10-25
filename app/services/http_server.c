@@ -122,8 +122,13 @@ bool http_server_start()
 
 esp_err_t login_get_handler(httpd_req_t *req)
 {
-    httpd_resp_set_type(req, "text/html");                   // set content type
-    httpd_resp_send(req, login_page, HTTPD_RESP_USE_STRLEN); // send HTML
+    char page_buffer[sizeof(login_page) + sizeof(common_header) + 10];
+
+    // For login page:
+    snprintf(page_buffer, sizeof(page_buffer), login_page, common_header);
+
+    httpd_resp_set_type(req, "text/html"); // set content type
+    httpd_resp_send(req, page_buffer, HTTPD_RESP_USE_STRLEN);
     neo_led_queue_send((neo_led_queue_t){0, 0, 255, 250});
     return ESP_OK;
 }
@@ -174,9 +179,14 @@ esp_err_t login_post_handler(httpd_req_t *req)
         }
     }
 
+    char page_buffer[sizeof(dashboard_page) + sizeof(common_header) + 10];
+
+    // For login page:
+    snprintf(page_buffer, sizeof(page_buffer), dashboard_page, common_header);
+
     if (strcmp(username, LOGIN_ID) == 0 && strcmp(password, LOGIN_PASS) == 0)
     {
-        httpd_resp_send(req, dashboard_page, HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, page_buffer, HTTPD_RESP_USE_STRLEN);
     }
     else
     {
