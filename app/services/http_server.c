@@ -126,7 +126,7 @@ esp_err_t login_get_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");                   // set content type
     httpd_resp_send(req, login_page, HTTPD_RESP_USE_STRLEN); // send HTML
-    neo_led_queue_send((neo_led_queue_t){NEO_LED_BLUE, 250, false});
+    neo_led_queue_send((neo_led_queue_t){0, 0, 255, 250});
     return ESP_OK;
 }
 
@@ -185,7 +185,7 @@ esp_err_t login_post_handler(httpd_req_t *req)
         httpd_resp_send(req, "Invalid Credentials!", HTTPD_RESP_USE_STRLEN);
     }
 
-    neo_led_queue_send((neo_led_queue_t){NEO_LED_BLUE, 250, false});
+    neo_led_queue_send((neo_led_queue_t){0, 0, 255, 250});
 
     return ESP_OK;
 }

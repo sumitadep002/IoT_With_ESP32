@@ -46,7 +46,7 @@ void http_client_ping_task(void *pvParameters)
 
             if (err != ESP_OK)
             {
-                neo_led_queue_send((neo_led_queue_t){NEO_LED_ORANGE, 0, true});
+                neo_led_queue_send((neo_led_queue_t){255, 165, 0, 0});
                 ESP_LOGE(TAG_PING, "NO-INTERNET");
                 gf_internet_status = false;
             }
@@ -58,7 +58,7 @@ void http_client_ping_task(void *pvParameters)
                 {
                     gf_ntp_updated = get_ntp();
                 }
-                neo_led_queue_send((neo_led_queue_t){NEO_LED_GREEN, 0, true});
+                neo_led_queue_send((neo_led_queue_t){0, 255, 0, 0});
             }
 
             esp_http_client_cleanup(client);
