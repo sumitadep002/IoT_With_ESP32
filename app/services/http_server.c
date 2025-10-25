@@ -5,55 +5,53 @@
 #include "wifi.h"
 #include "neo_led.h"
 
-static const char login_page[] =
-    "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-    "<title>ESP Login</title><style>"
-    "body{font-family:Arial,Helvetica,sans-serif;background:#f2f2f2} .box{width:320px;margin:80px auto;padding:20px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}"
-    "input{width:100%;padding:10px;margin:8px 0;box-sizing:border-box} button{width:100%;padding:10px;background:#4CAF50;color:#fff;border:0;border-radius:4px}"
-    "</style></head><body><div class='box'><h3>Login</h3>"
-    "<form action='/login' method='post'>"
-    "<input type='text' name='username' placeholder='Username' required>"
-    "<input type='password' name='password' placeholder='Password' required>"
-    "<button type='submit'>Login</button></form></div></body></html>";
-
-static const char dashboard_page[] =
-    "<!DOCTYPE html><html><head><meta charset='utf-8'>"
-    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-    "<title>ESP Dashboard</title>"
+static const char common_header[] =
     "<style>"
-    "body{font-family:Arial,Helvetica,sans-serif;text-align:center;background:#f2f2f2;margin-top:60px;}"
-    "h1{color:#333;}"
-    ".status{margin-top:30px;font-size:18px;}"
-    ".ok{color:green;}"
-    ".fail{color:red;}"
-    "</style></head><body>"
-    "<h2>Welcome!</h2>"
-    "<h1 id='clock'>--:--:--</h1>"
-    "<div class='status'>"
-    "Wi-Fi: <span id='wifi-status'>—</span><br>"
-    "Internet: <span id='internet-status'>—</span>"
+    "body{font-family:Arial,Helvetica,sans-serif;background:#f2f2f2;margin:0;padding:0;}"
+    ".topbar{position:fixed;top:0;left:0;width:100%%;height:40px;"
+    "background:#fff;box-shadow:0 2px 5px rgba(0,0,0,0.1);display:flex;"
+    "justify-content:space-between;align-items:center;padding:0 15px;font-size:14px;}"
+    ".status{font-size:13px;color:#555;}"
+    ".ok{color:green;}.fail{color:red;}"
+    "#clock{font-weight:bold;color:#333;}"
+    "main{padding-top:60px;}"
+    "</style>"
+
+    "<div class='topbar'>"
+    "<div class='status'>Wi-Fi: <span id='wifi-status'>—</span> | Internet: <span id='internet-status'>—</span></div>"
+    "<div id='clock'>--:--:--</div>"
     "</div>"
 
     "<script>"
-    // --- Clock update ---
-    "function updateClock(){"
-    " fetch('/time').then(res=>res.text()).then(t=>{"
-    "  document.getElementById('clock').innerText=t;"
-    " });"
-    "}"
+    "function updateClock(){fetch('/time').then(r=>r.text()).then(t=>document.getElementById('clock').innerText=t);} "
     "setInterval(updateClock,1000);updateClock();"
 
-    // --- Network status update ---
-    "function updateStatus(){"
-    " fetch('/status').then(res=>res.json()).then(data=>{"
-    "  document.getElementById('wifi-status').innerText=data.wifi;"
-    "  document.getElementById('internet-status').innerText=data.internet;"
-    "  document.getElementById('wifi-status').className=(data.wifi==='connected')?'ok':'fail';"
-    "  document.getElementById('internet-status').className=(data.internet==='available')?'ok':'fail';"
-    " });"
-    "}"
+    "function updateStatus(){fetch('/status').then(r=>r.json()).then(d=>{"
+    "document.getElementById('wifi-status').innerText=d.wifi;"
+    "document.getElementById('internet-status').innerText=d.internet;"
+    "document.getElementById('wifi-status').className=(d.wifi==='connected')?'ok':'fail';"
+    "document.getElementById('internet-status').className=(d.internet==='available')?'ok':'fail';"
+    "});}"
     "setInterval(updateStatus,3000);updateStatus();"
-    "</script>"
+    "</script>";
+
+static const char login_page[] =
+    "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<title>ESP Login</title></head><body>"
+    "%s" // <---- placeholder for common_header
+    "<main><div class='box' style='width:320px;margin:80px auto;padding:20px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)'>"
+    "<h3>Login</h3>"
+    "<form action='/login' method='post'>"
+    "<input type='text' name='username' placeholder='Username' required>"
+    "<input type='password' name='password' placeholder='Password' required>"
+    "<button type='submit' style='width:100%%;padding:10px;background:#4CAF50;color:#fff;border:0;border-radius:4px;'>Login</button>"
+    "</form></div></main></body></html>";
+
+static const char dashboard_page[] =
+    "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<title>ESP Dashboard</title></head><body>"
+    "%s" // <---- placeholder for common_header
+    "<main><h2>Welcome!</h2><p>Device dashboard content goes here.</p></main>"
     "</body></html>";
 
 static esp_err_t login_get_handler(httpd_req_t *req);
