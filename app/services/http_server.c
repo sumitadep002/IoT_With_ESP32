@@ -75,9 +75,49 @@ static const char dashboard_page[] =
     "cursor:pointer;font-weight:600;margin-top:20px;'>Open Colorboard</button>"
     "</main></body></html>";
 
+static const char colorboard_page[] =
+    "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<title>ESP Colorboard</title></head><body>"
+    "%s"
+    "<main style='text-align:center;padding:20px;'>"
+    "<h2 style='margin-top:6px;color:#111;'>Color Spectrum</h2>"
+    "<canvas id='board' style='width:90vw;max-width:600px;height:300px;border-radius:10px;"
+    "background:linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red);"
+    "cursor:crosshair;'></canvas>"
+    "<div id='colorcode' style='font-size:18px;margin-top:12px;font-weight:bold;'>Hover to get color</div>"
+    "</main>"
+    "<script>"
+    "const canvas=document.getElementById('board');"
+    "canvas.width=canvas.clientWidth;canvas.height=canvas.clientHeight;"
+    "const ctx=canvas.getContext('2d');"
+    "const grad=ctx.createLinearGradient(0,0,canvas.width,0);"
+    "grad.addColorStop(0,'red');grad.addColorStop(0.17,'yellow');grad.addColorStop(0.33,'lime');"
+    "grad.addColorStop(0.5,'cyan');grad.addColorStop(0.67,'blue');grad.addColorStop(0.83,'magenta');grad.addColorStop(1,'red');"
+    "ctx.fillStyle=grad;ctx.fillRect(0,0,canvas.width,canvas.height);"
+
+    // ▼▼ Added throttling logic ▼▼
+    "let lastTime=0;"
+    "canvas.addEventListener('mousemove',e=>{"
+    "  const now=Date.now();"
+    "  if(now-lastTime<500)return;" // limit: 1 request per 100 ms
+    "  lastTime=now;"
+
+    "  const rect=canvas.getBoundingClientRect();"
+    "  const x=e.clientX-rect.left;"
+    "  const y=e.clientY-rect.top;"
+    "  const data=ctx.getImageData(x,y,1,1).data;"
+    "  const color=`#${((1<<24)+(data[0]<<16)+(data[1]<<8)+data[2]).toString(16).slice(1)}`;"
+    "  document.getElementById('colorcode').innerText=color;"
+    "  fetch(`/color?r=${data[0]}&g=${data[1]}&b=${data[2]}`).catch(()=>{});"
+    "});"
+    "</script></body></html>";
+
 static esp_err_t login_get_handler(httpd_req_t *req);
 static esp_err_t login_post_handler(httpd_req_t *req);
 static esp_err_t time_get_handler(httpd_req_t *req);
+static esp_err_t colorboard_get_handler(httpd_req_t *req);
+static esp_err_t color_get_handler(httpd_req_t *req);
 static esp_err_t status_get_handler(httpd_req_t *req);
 
 bool http_server_start()
@@ -127,13 +167,37 @@ bool http_server_start()
         return false;
     }
 
-    static const httpd_uri_t status_get_uri = {
+    httpd_uri_t status_get_uri = {
         .uri = "/status",
         .method = HTTP_GET,
         .handler = status_get_handler,
         .user_ctx = NULL};
 
     if (httpd_register_uri_handler(server, &status_get_uri) != ESP_OK)
+    {
+        httpd_stop(server);
+        return false;
+    }
+
+    httpd_uri_t colorboard_get_uri = {
+        .uri = "/colorboard",
+        .method = HTTP_GET,
+        .handler = colorboard_get_handler,
+        .user_ctx = NULL};
+
+    if (httpd_register_uri_handler(server, &colorboard_get_uri) != ESP_OK)
+    {
+        httpd_stop(server);
+        return false;
+    }
+
+    httpd_uri_t color_get_uri = {
+        .uri = "/color",
+        .method = HTTP_GET,
+        .handler = color_get_handler,
+        .user_ctx = NULL};
+
+    if (httpd_register_uri_handler(server, &color_get_uri) != ESP_OK)
     {
         httpd_stop(server);
         return false;
@@ -249,5 +313,36 @@ esp_err_t status_get_handler(httpd_req_t *req)
 
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, status_json, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+esp_err_t colorboard_get_handler(httpd_req_t *req)
+{
+    char page_buffer[sizeof(colorboard_page) + sizeof(common_header) + 10];
+    snprintf(page_buffer, sizeof(page_buffer), colorboard_page, common_header);
+
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, page_buffer, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+esp_err_t color_get_handler(httpd_req_t *req)
+{
+    char query[100];
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK)
+    {
+
+        char param[10];
+        neo_led_queue_t led = {.r = 0, .g = 0, .b = 0, .delay_ms = 0};
+
+        if (httpd_query_key_value(query, "r", param, sizeof(param)) == ESP_OK)
+            led.r = atoi(param);
+        if (httpd_query_key_value(query, "g", param, sizeof(param)) == ESP_OK)
+            led.g = atoi(param);
+        if (httpd_query_key_value(query, "b", param, sizeof(param)) == ESP_OK)
+            led.b = atoi(param);
+
+        neo_led_queue_send(led);
+    }
     return ESP_OK;
 }
