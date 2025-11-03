@@ -84,6 +84,7 @@ bool http_server_start()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = (1024 * 5);
 
     if (httpd_start(&server, &config) != ESP_OK)
     {
