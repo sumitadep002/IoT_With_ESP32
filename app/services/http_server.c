@@ -70,7 +70,9 @@ static const char dashboard_page[] =
     "%s" /* common_header goes here */
     "<main style='max-width:980px;margin:0 auto;padding:20px;text-align:center;'>"
     "<h2 style='margin-top:6px;color:#111;'>Device Dashboard</h2>"
-    "<p style='color:#555;'>Device information and controls appear here.</p>"
+    "<button onclick=\"window.location.href='/colorboard'\" "
+    "style='padding:10px 20px;background:#1976d2;color:#fff;border:0;border-radius:6px;"
+    "cursor:pointer;font-weight:600;margin-top:20px;'>Open Colorboard</button>"
     "</main></body></html>";
 
 static esp_err_t login_get_handler(httpd_req_t *req);
