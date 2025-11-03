@@ -5,18 +5,16 @@
 #include "wifi.h"
 #include "neo_led.h"
 
-/* Common header: top-centered date + time (minimal) */
 static const char common_header[] =
     "<style>"
     "body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f8;margin:0;padding:0;color:#222;}"
-    ".topbar{position:fixed;top:0;left:0;width:100%%;height:64px;display:flex;align-items:center;"
+    ".topbar{position:fixed;top:0;left:0;width:100%;height:64px;display:flex;align-items:center;"
     "justify-content:center;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);"
-    "box-shadow:0 1px 4px rgba(0,0,0,0.06);}"
+    "box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center;}"
     "#datetime{display:flex;flex-direction:column;align-items:center;line-height:1;}"
     "#date{font-size:13px;color:#666;margin-bottom:4px;}"
     "#clock{font-size:18px;font-weight:600;color:#111;}"
-    "main{padding-top:84px;}" /* leave space so content doesn't hide under topbar */
-    /* Small screens: slightly smaller clock */
+    "main{padding-top:84px;}"
     "@media (max-width:420px){"
     "  #clock{font-size:16px;} #date{font-size:12px;}"
     "  .topbar{height:56px;} main{padding-top:72px;}"
@@ -33,7 +31,6 @@ static const char common_header[] =
     "<script>"
     "function updateClock(){"
     "  fetch('/time').then(r=>r.text()).then(t=>{"
-    "    /* server returns 'HH:MM:SS, dd-mm-YYYY' */"
     "    const parts = t.split(',');"
     "    const clock = (parts[0]||'--:--:--').trim();"
     "    const date = (parts[1]||'').trim();"
@@ -41,7 +38,7 @@ static const char common_header[] =
     "    const dateEl = document.getElementById('date');"
     "    if(clockEl) clockEl.innerText = clock;"
     "    if(dateEl) dateEl.innerText = date;"
-    "  }).catch(()=>{/* silent */});"
+    "  }).catch(()=>{});"
     "}"
     "setInterval(updateClock, 1000); updateClock();"
     "</script>";
