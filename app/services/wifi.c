@@ -187,7 +187,7 @@ void event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG_WIFI, "Disconnected. Reconnecting...");
         wifi_state_set(false);
         esp_wifi_connect();
-        neo_led_queue_send((neo_led_queue_t){NEO_LED_RED, 250, false});
+        neo_led_queue_send((neo_led_queue_t){255, 0, 0, 250});
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)
     {
@@ -199,7 +199,7 @@ void event_handler(void *arg, esp_event_base_t event_base,
 
         wifi_state_set(true);
 
-        neo_led_queue_send((neo_led_queue_t){NEO_LED_ORANGE, 0, true});
+        neo_led_queue_send((neo_led_queue_t){255, 165, 0, 0});
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_ASSIGNED_IP_TO_CLIENT)
     {

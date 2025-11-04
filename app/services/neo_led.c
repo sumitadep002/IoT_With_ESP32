@@ -59,43 +59,13 @@ void neo_led_init(void)
     ESP_LOGI(TAG_NEO_LED, "NeoPixel LED initialized on GPIO %d", NEO_LED_GPIO);
 }
 
-void neo_led_ctrl(neo_led_t led)
+void neo_led_ctrl(uint8_t r, uint8_t g, uint8_t b)
 {
-    uint8_t code[3] = {0}; // GRB format for WS2812
+    uint8_t code[3];
 
-    switch (led)
-    {
-    case NEO_LED_RED:
-        code[0] = 0x00; // G
-        code[1] = 0xFF; // R
-        code[2] = 0x00; // B
-        break;
-
-    case NEO_LED_GREEN:
-        code[0] = 0xFF; // G
-        code[1] = 0x00; // R
-        code[2] = 0x00; // B
-        break;
-
-    case NEO_LED_BLUE:
-        code[0] = 0x00; // G
-        code[1] = 0x00; // R
-        code[2] = 0xFF; // B
-        break;
-
-    case NEO_LED_ORANGE:
-        code[0] = 0x40; // G (a bit of green)
-        code[1] = 0xFF; // R (full red)
-        code[2] = 0x00; // B (no blue)
-        break;
-
-    case NEO_LED_OFF:
-    default:
-        code[0] = 0x00;
-        code[1] = 0x00;
-        code[2] = 0x00;
-        break;
-    }
+    code[0] = g; // WS2812 expects GRB order
+    code[1] = r;
+    code[2] = b;
 
     ESP_ERROR_CHECK(rmt_transmit(tx_chan, encoder, code, sizeof(code), &transmit_config));
     ESP_ERROR_CHECK(rmt_tx_wait_all_done(tx_chan, portMAX_DELAY));
@@ -137,12 +107,12 @@ void neo_led_task(void *param)
     {
         if (xQueueReceive(neo_led_queue, &led_comp, portMAX_DELAY) == pdPASS)
         {
-            neo_led_ctrl(led_comp.color);
+            neo_led_ctrl(led_comp.r, led_comp.g, led_comp.b);
 
-            if (led_comp.latch == false)
+            if (led_comp.delay_ms != 0)
             {
                 DELAY_MS(led_comp.delay_ms);
-                neo_led_ctrl(NEO_LED_OFF);
+                neo_led_ctrl(0, 0, 0);
                 DELAY_MS(led_comp.delay_ms);
             }
         }
