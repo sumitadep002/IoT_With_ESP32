@@ -100,7 +100,7 @@ static const char colorboard_page[] =
     "let lastTime=0;"
     "canvas.addEventListener('mousemove',e=>{"
     "  const now=Date.now();"
-    "  if(now-lastTime<500)return;" // limit: 1 request per 100 ms
+    "  if(now-lastTime<100)return;" // limit: 1 request per 100 ms
     "  lastTime=now;"
 
     "  const rect=canvas.getBoundingClientRect();"
@@ -343,6 +343,10 @@ esp_err_t color_get_handler(httpd_req_t *req)
             led.b = atoi(param);
 
         neo_led_queue_send(led);
+
+        httpd_resp_set_hdr(req, "Connection", "close");
+        httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+        httpd_resp_sendstr(req, "OK");
     }
     return ESP_OK;
 }
