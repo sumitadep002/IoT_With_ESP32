@@ -8,13 +8,14 @@
 static const char common_header[] =
     "<style>"
     "body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f8;margin:0;padding:0;color:#222;}"
-    ".topbar{position:fixed;top:0;left:0;width:100%;height:64px;display:flex;align-items:center;"
-    "justify-content:space-between;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);"
+    ".topbar{position:fixed;top:0;left:0;width:100%;height:64px;"
+    "display:flex;align-items:center;justify-content:flex-end;"
+    "z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);"
     "box-shadow:0 1px 4px rgba(0,0,0,0.06);padding:0 20px;box-sizing:border-box;}"
-    "#datetime{display:flex;flex-direction:column;align-items:center;line-height:1;}"
+    "#datetime{position:absolute;left:50%;transform:translateX(-50%);text-align:center;line-height:1;}"
     "#date{font-size:13px;color:#666;margin-bottom:4px;}"
     "#clock{font-size:18px;font-weight:600;color:#111;}"
-    "#wifi{font-size:14px;font-weight:600;color:#555;}"
+    "#wifi{font-size:16px;font-weight:600;color:#555;}"
     "#wifi.connected{color:#2e7d32;}"    /* green for connected */
     "#wifi.disconnected{color:#c62828;}" /* red for disconnected */
     "main{padding-top:84px;}"
