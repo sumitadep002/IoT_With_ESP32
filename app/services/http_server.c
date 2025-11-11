@@ -8,16 +8,23 @@
 static const char common_header[] =
     "<style>"
     "body{font-family:Arial,Helvetica,sans-serif;background:#f7f7f8;margin:0;padding:0;color:#222;}"
-    ".topbar{position:fixed;top:0;left:0;width:100%;height:64px;display:flex;align-items:center;"
-    "justify-content:center;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);"
-    "box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center;}"
+    ".topbar{position:fixed;top:0;left:0;width:100%;height:64px;"
+    "display:flex;align-items:center;justify-content:center;"
+    "z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);"
+    "box-shadow:0 1px 4px rgba(0,0,0,0.06);position:relative;}"
     "#datetime{display:flex;flex-direction:column;align-items:center;line-height:1;}"
     "#date{font-size:13px;color:#666;margin-bottom:4px;}"
     "#clock{font-size:18px;font-weight:600;color:#111;}"
+    "#wifi{position:absolute;right:20px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;}"
+    "#wifi span.icon{font-size:18px;}"
+    "#wifi.connected span.icon{color:#2e7d32;}"    /* green */
+    "#wifi.nointernet span.icon{color:#ff9800;}"   /* orange */
+    "#wifi.disconnected span.icon{color:#c62828;}" /* red */
     "main{padding-top:84px;}"
     "@media (max-width:420px){"
     "  #clock{font-size:16px;} #date{font-size:12px;}"
     "  .topbar{height:56px;} main{padding-top:72px;}"
+    "  #wifi{right:10px;font-size:12px;}"
     "}"
     "</style>"
 
@@ -26,21 +33,49 @@ static const char common_header[] =
     "    <div id='date'>-- --- ----</div>"
     "    <div id='clock'>--:--:--</div>"
     "  </div>"
+    "  <div id='wifi' class='disconnected'>"
+    "    <span class='icon'>❌</span><span id='wifi-text'>Disconnected</span>"
+    "  </div>"
     "</div>"
 
     "<script>"
     "function updateClock(){"
     "  fetch('/time').then(r=>r.text()).then(t=>{"
-    "    const parts = t.split(',');"
-    "    const clock = (parts[0]||'--:--:--').trim();"
-    "    const date = (parts[1]||'').trim();"
-    "    const clockEl = document.getElementById('clock');"
-    "    const dateEl = document.getElementById('date');"
-    "    if(clockEl) clockEl.innerText = clock;"
-    "    if(dateEl) dateEl.innerText = date;"
+    "    const parts=t.split(',');"
+    "    const clock=(parts[0]||'--:--:--').trim();"
+    "    const date=(parts[1]||'').trim();"
+    "    const clockEl=document.getElementById('clock');"
+    "    const dateEl=document.getElementById('date');"
+    "    if(clockEl) clockEl.innerText=clock;"
+    "    if(dateEl) dateEl.innerText=date;"
     "  }).catch(()=>{});"
     "}"
-    "setInterval(updateClock, 1000); updateClock();"
+    ""
+    "function updateWifi(){"
+    "  fetch('/status').then(r=>r.json()).then(s=>{"
+    "    const wifiEl=document.getElementById('wifi');"
+    "    const iconEl=wifiEl.querySelector('.icon');"
+    "    const textEl=document.getElementById('wifi-text');"
+    "    if(!wifiEl||!iconEl||!textEl)return;"
+    ""
+    "    if(s.wifi==='connected' && s.internet==='available'){"
+    "      wifiEl.className='connected';"
+    "      iconEl.textContent='✅';"
+    "      textEl.textContent='Connected';"
+    "    } else if(s.wifi==='connected' && s.internet==='unavailable'){"
+    "      wifiEl.className='nointernet';"
+    "      iconEl.textContent='⚠️';"
+    "      textEl.textContent='No Internet';"
+    "    } else {"
+    "      wifiEl.className='disconnected';"
+    "      iconEl.textContent='❌';"
+    "      textEl.textContent='Disconnected';"
+    "    }"
+    "  }).catch(()=>{});"
+    "}"
+    ""
+    "setInterval(updateClock,1000);updateClock();"
+    "setInterval(updateWifi,2000);updateWifi();"
     "</script>";
 
 /* Login page: placeholder %s for common_header */
@@ -124,7 +159,7 @@ bool http_server_start()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.stack_size = (1024 * 5);
+    config.stack_size = (1024 * 6);
 
     if (httpd_start(&server, &config) != ESP_OK)
     {
